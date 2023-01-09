@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { Layout } from "antd";
-import SignUp from '../components/Session/SignUp';
+import SignUp from '../components/Session/Singup';
 
 export default function SignUpPage(){
     return (

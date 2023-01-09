@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { LoadingOutlined, LockOutlined, MailOutlined } from "@ant-design/icons";
-import Link from 'next/link'  
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { LoadingOutlined, LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
+import Link from 'next/link';
+import { doc, setDoc, getFirestore, serverTimestamp} from "firebase/firestore"
 
 import firebase from "firebase/app";
 import "firebase/auth";
@@ -19,34 +20,35 @@ import {
 
 import { initializeApp } from "firebase/app";
 import { firebaseConfig } from "../../config/firebase";
+import Router from "next/router";
 
-const firebaseApp = initializeApp(firebaseConfig)
+const firebaseApp = initializeApp(firebaseConfig);
 
-const Login = ({ setCurrent }) => {
-  const auth = getAuth(firebaseApp);
-  const [email, setEmail] = useState("");
+const SignUp = () => {
+  const auth = getAuth(firebase);
+  const db = getFirestore(firebaseApp);
+  const [state, setState] = useState({});
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = () => {
     setLoading(true);
-    signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
+    createUserWithEmailAndPassword(auth, state.email, password)
+      .then(async (userCredential) => {
         const user = userCredential.user;
-        console.log(user);
-        message.success("lesgo")
+        message.success("Vous êtes bien inscrit")
+        await setDoc(doc(db, "users", user.uid), {... state, createdAt: serverTimestamp(),})
+        setLoading(false);
+        Router.push("/login");
       })
       .catch((error) => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        console.log(errorCode, errorMessage);
-        message.error("too bad")
-      });
+        console.log(error.code , error.message);
+        message.error("Une erreur est survenue lors de")
+        setLoading(false);
+      });   
+
   };
 
-  const onMailChange = (event) => {
-    setEmail(event.target.value);
-  };
   const onPasswordChange = (event) => {
     setPassword(event.target.value);
   };
@@ -72,17 +74,44 @@ const Login = ({ setCurrent }) => {
               }}
             >
               <Title level={1} style={{ fontSize: 32, marginBottom: 32 }}>
-                Connexion
+                Inscription
               </Title>
 
               <Form onFinish={handleSubmit} className="login-form">
+              <Form.Item name="Votre Prénom" rules={[{ required: true }]}>
+                  <Input
+                    prefix={<UserOutlined />}
+                    type="text"
+                    size="large"
+                    placeholder="Votre Prénom"
+                    name="firstname"
+                    onChange={(e) =>
+                        setState ({...state, [e.target.name]: e.target.value})
+                    }
+                  />
+                </Form.Item>
+                <Form.Item name="Votre Nom" rules={[{ required: true }]}>
+                  <Input
+                    prefix={<UserOutlined />}
+                    type="text"
+                    size="large"
+                    placeholder="Votre Nom"
+                    name="lastname"
+                    onChange={(e) =>
+                        setState ({...state, [e.target.name]: e.target.value})
+                    }
+                  />
+                </Form.Item>
                 <Form.Item name="Votre Email" rules={[{ required: true }]}>
                   <Input
                     prefix={<MailOutlined />}
                     type="email"
                     size="large"
-                    placeholder=" Votre Email"
-                    onChange={onMailChange}
+                    placeholder="Votre Email"
+                    name="email"
+                    onChange={(e) =>
+                        setState ({...state, [e.target.name]: e.target.value})
+                    }
                   />
                 </Form.Item>
                 <Form.Item
@@ -98,20 +127,6 @@ const Login = ({ setCurrent }) => {
                   />
                 </Form.Item>
 
-                <Button
-                  type="link"
-                  style={{
-                    fontSize: 11,
-                    position: "relative",
-                    top: -25,
-                    right: -105,
-                  }}
-                  className="login-form-forgot"
-                  onClick={() => setCurrent({ forgot: true })}
-                >
-                  Mot de passe oublié ?
-                </Button>
-
                 <Form.Item>
                   <Button
                     shape="round"
@@ -120,7 +135,7 @@ const Login = ({ setCurrent }) => {
                     className="login-form-button"
                   >
                     {loading ? <LoadingOutlined /> : null}
-                    Connexion
+                    Inscription
                   </Button>
                 </Form.Item>
               </Form>
@@ -132,9 +147,9 @@ const Login = ({ setCurrent }) => {
               }}
             >
               <Title level={4} style={{ fontWeight: 500, fontSize: 18 }}>
-                Nouveau sur Recipes ?
+               Déjà un compte sur Recipes ?
               </Title>
-              <Link href="/signup">Inscription</Link>
+              <Link href="/login">Connexion</Link>
             </Typography>
           </Col>
         </Row>
@@ -143,4 +158,4 @@ const Login = ({ setCurrent }) => {
   );
 };
 
-export default Login;
+export default SignUp;

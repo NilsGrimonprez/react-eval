@@ -5,4 +5,4 @@ const jeuPage = () => {
     <Jeu/>
   )
 }
-export default jeuPage;
+export default Jeu;

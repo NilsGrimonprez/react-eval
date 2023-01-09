@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { LoadingOutlined, LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { LoadingOutlined, LockOutlined, MailOutlined } from "@ant-design/icons";
 import Link from 'next/link';
-import { doc, setDoc, getFirestore, serverTimestamp} from "firebase/firestore"
+import { useRouter } from 'next/router';
+
 
 import firebase from "firebase/app";
 import "firebase/auth";
@@ -20,35 +21,36 @@ import {
 
 import { initializeApp } from "firebase/app";
 import { firebaseConfig } from "../../config/firebase";
-import Router from "next/router";
 
-const firebaseApp = initializeApp(firebaseConfig);
+const firebaseApp = initializeApp(firebaseConfig)
 
-const SignUp = () => {
-  const auth = getAuth(firebase);
-  const db = getFirestore(firebaseApp);
-  const [state, setState] = useState({});
+const Login = ({ setCurrent }) => {
+  const router = useRouter();
+  const auth = getAuth(firebaseApp);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = () => {
     setLoading(true);
-    createUserWithEmailAndPassword(auth, state.email, password)
-      .then(async (userCredential) => {
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
         const user = userCredential.user;
-        message.success("inscrit")
-        await setDoc(doc(db, "users", user.uid), {... state, createdAt: serverTimestamp(),})
-        setLoading(false);
-        Router.push("/dashboard");
+        console.log(user);
+        message.success("vous êtes connecté !")
+        router.push('/jeu');
       })
       .catch((error) => {
-        console.log(error.code , error.message);
-        message.error("erreur")
-        setLoading(false);
-      });   
-
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.log(errorCode, errorMessage);
+        message.error("erreur survenue pendant la connexion")
+      });
   };
 
+  const onMailChange = (event) => {
+    setEmail(event.target.value);
+  };
   const onPasswordChange = (event) => {
     setPassword(event.target.value);
   };
@@ -74,44 +76,17 @@ const SignUp = () => {
               }}
             >
               <Title level={1} style={{ fontSize: 32, marginBottom: 32 }}>
-                Inscription
+                Connexion
               </Title>
 
               <Form onFinish={handleSubmit} className="login-form">
-              <Form.Item name="Votre Prénom" rules={[{ required: true }]}>
-                  <Input
-                    prefix={<UserOutlined />}
-                    type="text"
-                    size="large"
-                    placeholder="Votre Prénom"
-                    name="firstname"
-                    onChange={(e) =>
-                        setState ({...state, [e.target.name]: e.target.value})
-                    }
-                  />
-                </Form.Item>
-                <Form.Item name="Votre Nom" rules={[{ required: true }]}>
-                  <Input
-                    prefix={<UserOutlined />}
-                    type="text"
-                    size="large"
-                    placeholder="Votre Nom"
-                    name="lastname"
-                    onChange={(e) =>
-                        setState ({...state, [e.target.name]: e.target.value})
-                    }
-                  />
-                </Form.Item>
                 <Form.Item name="Votre Email" rules={[{ required: true }]}>
                   <Input
                     prefix={<MailOutlined />}
                     type="email"
                     size="large"
-                    placeholder="Votre Email"
-                    name="email"
-                    onChange={(e) =>
-                        setState ({...state, [e.target.name]: e.target.value})
-                    }
+                    placeholder=" Votre Email"
+                    onChange={onMailChange}
                   />
                 </Form.Item>
                 <Form.Item
@@ -127,6 +102,20 @@ const SignUp = () => {
                   />
                 </Form.Item>
 
+                <Button
+                  type="link"
+                  style={{
+                    fontSize: 11,
+                    position: "relative",
+                    top: -25,
+                    right: -105,
+                  }}
+                  className="login-form-forgot"
+                  onClick={() => setCurrent({ forgot: true })}
+                >
+                  Mot de passe oublié ?
+                </Button>
+
                 <Form.Item>
                   <Button
                     shape="round"
@@ -135,7 +124,7 @@ const SignUp = () => {
                     className="login-form-button"
                   >
                     {loading ? <LoadingOutlined /> : null}
-                    Inscription
+                    Connexion
                   </Button>
                 </Form.Item>
               </Form>
@@ -147,9 +136,9 @@ const SignUp = () => {
               }}
             >
               <Title level={4} style={{ fontWeight: 500, fontSize: 18 }}>
-               Déjà un compte sur Recipes ?
+                Nouveau sur Recipes ?
               </Title>
-              <Link href="/login">Connexion</Link>
+              <Link href="/signup">Inscription</Link>
             </Typography>
           </Col>
         </Row>
@@ -158,4 +147,4 @@ const SignUp = () => {
   );
 };
 
-export default SignUp;
+export default Login;
