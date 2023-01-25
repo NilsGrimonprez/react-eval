@@ -1,71 +1,121 @@
 import { useState, useEffect } from "react";
-import Carte from "./Carte/Carte";
+import Carte from "./Carte";
+import { Layout } from "antd";
+import Navbar from "./Navbar";
+import { initializeApp } from "firebase/app";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, doc, arrayUnion, setDoc } from "firebase/firestore";
+import { firebaseConfig } from "../config/firebase";
+import Router from "next/router";
+
+const firebaseApp = initializeApp(firebaseConfig);
 
 const Jeu = ({ data }) => {
-    // true est le J1 et false le J2
-    const [joueurCourant, setJoueurCourant] = useState(true);
+    const auth = getAuth(firebaseApp);
+    const db = getFirestore(firebaseApp);
 
-    const [scoreJ1, setScoreJ1] = useState(0);
-    const [scoreJ2, setScoreJ2] = useState(0);
+    const [playing, setPlaying] = useState(true);
+
+    const [score, setScore] = useState(0);
 
     const [firstCard, setFirstCard] = useState(null);
-    const [secondCard, setSecondCard] = useState(null);
 
+    const [cartes, setCartes] = useState([]);
     const [decouvertes, setDecouvertes] = useState([]);
 
-    const [cartes, setCartes] = useState();
+    const [finished, setFinished] = useState(false);
 
-    handleCardClick = (carte) => {
-        if (firstCard === null) {
-            setFirstCard(carte);
+    const [uid, setUid] = useState();
+
+    const handleCardClick = (carte) => {
+        if (playing) {
+            if (firstCard === null) {
+                setFirstCard(carte);
+            } else {
+                checkMatch(firstCard, carte);
+                setFirstCard(null);
+            }
         } else {
-            setSecondCard(carte);
-            checkMatch();
+            if (firstCard === null) {
+                setFirstCard(carte);
+            } else {
+                setFirstCard(null);
+                setPlaying(true);
+            }
         }
     };
 
-    checkMatch = () => {
-        if (firstCard === secondCard) {
-            if (joueurCourant) {
-                setScoreJ1(scoreJ1 + 1);
-            } else {
-                setScoreJ2(scoreJ2 + 1);
-            }
-            setJoueurCourant(!joueurCourant);
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            setUid(user.uid);
+        } else {
+            Router.push("/login");
+        }
+    });
+
+    const checkMatch = async (firstCard, secondCard) => {
+        if (firstCard.url == secondCard.url) {
+            setScore(score + 5);
             setDecouvertes([...decouvertes, firstCard, secondCard]);
         } else {
+            setScore(score - 1);
+            setPlaying(false);
             setJoueurCourant(!joueurCourant);
         }
     };
 
     useEffect(() => {
-        data.map((carte) => {
-            if (decouvertes.includes(carte)) {
-                setCartes((cartes) => [
-                    ...cartes,
-                    {
-                        ...carte,
-                        flipped: true,
-                    },
-                ]);
-            } else {
-                setCartes((cartes) => [
-                    ...cartes,
-                    {
-                        ...carte,
-                        flipped: false,
-                    },
-                ]);
-            }
-        });
+        const saveScore = async () => {
+            await setDoc(
+                doc(db, "users", uid),
+                {
+                    scores: arrayUnion(String(score)),
+                },
+                { merge: true }
+            );
+        };
+        if (decouvertes.length === 16) {
+            saveScore();
+            setFinished(true);
+        }
     }, [decouvertes]);
 
+    useEffect(() => {
+        if (data?.length > 0) {
+            setCartes(data);
+        } else {
+            console.log("Error : no data");
+        }
+    }, [data]);
+
+    useEffect(() => {
+        if (finished) {
+            alert("Votre score est " + score);
+        }
+    }, [finished]);
+
     return (
-        <div>
-            {cartes.map((carte) => {
-                <Carte carte={carte} onClick={() => handleCardClick(carte)} />;
-            })}
-        </div>
+        <Layout>
+            <Navbar />
+            <div
+                style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    justifyContent: "center",
+                    width: 850,
+                    position: "fixed",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                }}
+            >
+                {cartes.map((carte) => (
+                    <div onClick={() => handleCardClick(carte)}>
+                        <Carte carte={carte} />
+                    </div>
+                ))}
+            </div>
+        </Layout>
     );
 };
 

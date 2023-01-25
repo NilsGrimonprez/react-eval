@@ -1,21 +1,18 @@
 import React from "react";
-import Link from "next/link";
-import { Col, Row, Layout } from "antd";
+import { Col, Row, Layout, Button } from "antd";
+import Navbar from "./Navbar";
 
 function App() {
-  return (
-    <Layout>
-      <Row justify="space-between" style={{ color: "black" }}>
-        <Col>
-          <Link href="/signup">S'inscrire</Link>
-        </Col>
-        <Col>
-          <Link href="/login">Se connecter</Link>
-        </Col>
-      </Row>
-      <Row>Bienvenue sur notre Jeu veuillez vous connecter !</Row>
-    </Layout>
-  );
+    return (
+        <Layout>
+            <Navbar />
+            <div style={{ color: "black", textAlign: "center", margin: 20 }}>
+                Bienvenue sur notre Jeu veuillez vous connecter !
+                <Button href="/signup">S'inscrire</Button>
+                <Button href="/login">Se connecter</Button>
+            </div>
+        </Layout>
+    );
 }
 
 export default App;

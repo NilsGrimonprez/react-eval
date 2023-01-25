@@ -1,7 +1,5 @@
-import Login from '../components/Session/Login'
+import App from "../components/App";
 
 export default function Home() {
-  return (
-    <Login title="Accueil"/>
-  )
+    return <App />;
 }
